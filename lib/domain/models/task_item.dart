@@ -7,7 +7,9 @@ class TaskItem {
     required this.dueDate,
     required this.createdByUserId,
     this.groupId,
+    this.assignedToUserId,
     this.isDone = false,
+    this.updatedAt,
   });
 
   final String id;
@@ -16,7 +18,9 @@ class TaskItem {
   final DateTime dueDate;
   final String createdByUserId;
   final String? groupId;
+  final String? assignedToUserId;
   final bool isDone;
+  final DateTime? updatedAt;
 
   bool get isPersonal => groupId == null;
 
@@ -27,7 +31,9 @@ class TaskItem {
     DateTime? dueDate,
     String? createdByUserId,
     String? groupId,
+    String? assignedToUserId,
     bool? isDone,
+    DateTime? updatedAt,
   }) {
     return TaskItem(
       id: id ?? this.id,
@@ -36,7 +42,9 @@ class TaskItem {
       dueDate: dueDate ?? this.dueDate,
       createdByUserId: createdByUserId ?? this.createdByUserId,
       groupId: groupId ?? this.groupId,
+      assignedToUserId: assignedToUserId ?? this.assignedToUserId,
       isDone: isDone ?? this.isDone,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

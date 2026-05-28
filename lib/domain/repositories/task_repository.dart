@@ -9,6 +9,11 @@ abstract class TaskRepository {
     required String userId,
   });
 
+  Stream<List<TaskItem>> watchForGroup({
+    required String groupId,
+    required String userId,
+  });
+
   Future<TaskItem> addPersonalTask({
     required String userId,
     required String title,
@@ -19,6 +24,7 @@ abstract class TaskRepository {
   Future<TaskItem> addGroupTask({
     required String groupId,
     required String userId,
+    required String assignedToUserId,
     required String title,
     required String description,
     required DateTime dueDate,

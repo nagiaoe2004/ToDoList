@@ -47,6 +47,7 @@ class InMemoryStore {
         name: 'Nhóm UI / Flutter',
         workDescription: 'Phát triển giao diện và checklist triển khai app',
         companyName: 'ToDo Labs',
+        leaderUserId: 'u-1',
         memberUserIds: <String>['u-1', 'u-2'],
       ),
     ];

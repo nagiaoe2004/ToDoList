@@ -21,7 +21,8 @@ String mapRepositoryErrorToMessage(Object error) {
     return 'Dữ liệu không hợp lệ.';
   }
   if (error is StateError) {
-    switch (error.message) {
+    final String msg = error.message.toString();
+    switch (msg) {
       case 'Group not found':
         return 'Không tìm thấy nhóm.';
       case 'Not a member':
@@ -35,8 +36,21 @@ String mapRepositoryErrorToMessage(Object error) {
       case 'User not found':
         return 'Không tìm thấy người dùng.';
       default:
-        return 'Đã có lỗi xảy ra. Thử lại sau.';
+        if (msg.contains('Group not found')) {
+          return 'Không tìm thấy nhóm.';
+        }
+        if (msg.contains('Not a member')) {
+          return 'Bạn không phải thành viên nhóm này.';
+        }
+        if (msg.contains('User not found for email') ||
+            msg.contains('User not found')) {
+          return 'Không tìm thấy người dùng với email đó.';
+        }
+        if (msg.contains('permission-denied')) {
+          return 'Bạn chưa có quyền truy cập dữ liệu Firebase.';
+        }
+        return 'Lỗi dữ liệu: $msg';
     }
   }
-  return 'Đã có lỗi xảy ra. Thử lại sau.';
+  return 'Đã có lỗi xảy ra. Thử lại sau. (${error.runtimeType})';
 }

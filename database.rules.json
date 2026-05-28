@@ -2,6 +2,7 @@
   "rules": {
     "users": {
       ".read": "auth != null",
+      ".indexOn": ["email"],
       "$uid": {
         ".write": "auth != null && auth.uid == $uid"
       }
@@ -12,8 +13,11 @@
     },
     "tasks": {
       ".read": "auth != null",
-      ".write": "auth != null",
-      ".indexOn": ["createdByUserId", "groupId"]
+      ".indexOn": ["createdByUserId", "groupId", "assignedToUserId"],
+      "$taskId": {
+        ".read": "auth != null && ((data.child('groupId').val() == null && data.child('createdByUserId').val() == auth.uid) || (data.child('groupId').val() != null && root.child('userGroups').child(auth.uid).child(data.child('groupId').val()).exists()))",
+        ".write": "auth != null && ((data.child('groupId').val() == null && data.child('createdByUserId').val() == auth.uid) || (newData.child('groupId').val() == null && newData.child('createdByUserId').val() == auth.uid) || (data.child('groupId').val() != null && root.child('groups').child(data.child('groupId').val()).child('leaderUserId').val() == auth.uid) || (newData.child('groupId').val() != null && root.child('groups').child(newData.child('groupId').val()).child('leaderUserId').val() == auth.uid) || (data.child('groupId').val() != null && data.child('assignedToUserId').val() == auth.uid && data.child('isDone').val() == false && newData.child('isDone').val() == true && newData.child('title').val() == data.child('title').val() && newData.child('description').val() == data.child('description').val() && newData.child('dueDate').val() == data.child('dueDate').val() && newData.child('createdByUserId').val() == data.child('createdByUserId').val() && newData.child('groupId').val() == data.child('groupId').val() && newData.child('assignedToUserId').val() == data.child('assignedToUserId').val()))"
+      }
     },
     "groups": {
       ".read": "auth != null",

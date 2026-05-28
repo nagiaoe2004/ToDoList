@@ -21,38 +21,59 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: 'Tùy chỉnh giao diện và trải nghiệm sử dụng',
                   ),
                   const SizedBox(height: 14),
-                  SwitchListTile(
-                    value: app.isDarkMode,
-                    onChanged: app.setDarkMode,
-                    title: const Text('Chế độ tối'),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Cỡ chữ', style: Theme.of(context).textTheme.titleMedium),
-                  Slider(
-                    value: app.fontScale,
-                    min: 0.9,
-                    max: 1.3,
-                    divisions: 4,
-                    label: app.fontScale.toStringAsFixed(2),
-                    onChanged: app.setFontScale,
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: app.fontFamily,
-                    decoration: const InputDecoration(
-                      labelText: 'Loại phông chữ',
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    items: const <String>['Mặc định', 'Serif', 'Monospace']
-                        .map(
-                          (String e) => DropdownMenuItem<String>(
-                            value: e,
-                            child: Text(e),
+                    child: SwitchListTile(
+                      value: app.isDarkMode,
+                      onChanged: app.setDarkMode,
+                      title: const Text('Chế độ tối'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Cỡ chữ',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Slider(
+                          value: app.fontScale,
+                          min: 0.9,
+                          max: 1.3,
+                          divisions: 4,
+                          label: app.fontScale.toStringAsFixed(2),
+                          onChanged: app.setFontScale,
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: app.fontFamily,
+                          decoration: const InputDecoration(
+                            labelText: 'Loại phông chữ',
                           ),
-                        )
-                        .toList(),
-                    onChanged: (String? v) {
-                      if (v != null) app.setFontFamily(v);
-                    },
+                          items: const <String>['Mặc định', 'Serif', 'Monospace']
+                              .map(
+                                (String e) => DropdownMenuItem<String>(
+                                  value: e,
+                                  child: Text(e),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (String? v) {
+                            if (v != null) app.setFontFamily(v);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(
@@ -62,7 +83,7 @@ class SettingsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Text(
-                      'Giới thiệu sản phẩm:\nHelio Todo là nền tảng quản lý công việc cá nhân và nhóm, hỗ trợ đồng bộ dữ liệu trên Firebase với giao diện tối ưu cho cả điện thoại và trình duyệt web.',
+                      'Giới thiệu sản phẩm:\nHelio Todo là ứng dụng được xây dựng dựa trên Flutter kết hợp cùng Firebase.Ngoài ra ứng dụng được xây dựng mục đích quản lý công việc cá nhân và nhóm',
                     ),
                   ),
                   const SizedBox(height: 16),

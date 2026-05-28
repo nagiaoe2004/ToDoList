@@ -9,18 +9,28 @@ class TaskTile extends StatelessWidget {
     required this.item,
     required this.onChanged,
     required this.onDelete,
+    this.metaText,
+    this.canToggle = true,
+    this.canDelete = true,
   });
 
   final TaskItem item;
   final ValueChanged<bool> onChanged;
   final VoidCallback onDelete;
+  final String? metaText;
+  final bool canToggle;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -29,7 +39,9 @@ class TaskTile extends StatelessWidget {
           children: <Widget>[
             Checkbox(
               value: item.isDone,
-              onChanged: (bool? value) => onChanged(value ?? false),
+              onChanged: canToggle
+                  ? (bool? value) => onChanged(value ?? false)
+                  : null,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
@@ -44,7 +56,7 @@ class TaskTile extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
-                      color: const Color(0xFF15171A),
+                      color: scheme.onSurface,
                       decoration: item.isDone
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
@@ -60,6 +72,16 @@ class TaskTile extends StatelessWidget {
                     'Hạn: ${formatDate(item.dueDate)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  if (metaText != null && metaText!.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 4),
+                    Text(
+                      metaText!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -75,7 +97,7 @@ class TaskTile extends StatelessWidget {
               ),
             ),
             IconButton(
-              onPressed: onDelete,
+              onPressed: canDelete ? onDelete : null,
               icon: const Icon(Icons.delete_outline_rounded),
             ),
           ],

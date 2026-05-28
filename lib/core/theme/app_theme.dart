@@ -23,6 +23,10 @@ ThemeData buildIosCleanTheme({
   final Color currentCard = isDarkMode ? darkCard : card;
   final Color currentText = isDarkMode ? darkText : textPrimary;
   final Color currentSubText = isDarkMode ? darkSecondary : textSecondary;
+  final Color fieldBorder =
+      isDarkMode ? Colors.white.withValues(alpha: 0.35) : const Color(0xFF8D93A5);
+  final Color panelBorder =
+      isDarkMode ? Colors.white.withValues(alpha: 0.28) : Colors.black;
 
   return ThemeData(
     useMaterial3: true,
@@ -58,13 +62,24 @@ ThemeData buildIosCleanTheme({
       hintStyle: TextStyle(color: currentSubText),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(color: fieldBorder, width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: fieldBorder, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: accent, width: 1.4),
       ),
     ),
     cardTheme: CardThemeData(
       color: currentCard,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: panelBorder, width: 1),
+      ),
       margin: EdgeInsets.zero,
     ),
   );

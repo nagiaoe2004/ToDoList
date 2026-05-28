@@ -1,5 +1,9 @@
 /// Lỗi đăng nhập (mock/API).
-enum SignInFailure { invalidCredentials }
+enum SignInFailure {
+  invalidCredentials,
+  networkUnavailable,
+  tooManyRequests,
+}
 
 /// Đăng nhập / đăng xuất; phiên hiện tại qua [currentUserId].
 abstract class AuthRepository {

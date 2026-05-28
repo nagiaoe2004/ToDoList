@@ -1,6 +1,6 @@
 # Firebase Setup (Safe for GitHub)
 
-Project now reads Firebase config from `--dart-define` instead of hardcoding keys in source files.
+Project reads Firebase config from `--dart-define` / `firebase.env`. Trong **debug** (`flutter run` debug hoặc F5), nếu không truyền define, app tự dùng tạm cấu hình dev (cùng project) để không bị màn trắng. **Release / profile** vẫn nên dùng `firebase.env` hoặc define đầy đủ.
 
 ## 1) Keep Firebase files local only
 
@@ -79,3 +79,29 @@ flutter run `
 ```
 
 If a required value is missing, app throws a clear startup error describing missing keys.
+
+## 4) Cách khuyến nghị cho cả nhóm (một file, không gõ dài)
+
+1. Copy `firebase.env.example` → `firebase.env` (file này **không** commit lên Git).
+2. Mở [Firebase Console](https://console.firebase.google.com) → Project của bạn → **Project settings** (biểu tượng bánh răng) → kéo xuống **Your apps**:
+   - Chọn app **Web** để lấy: API Key, App ID, Auth domain, Measurement ID.
+   - **Project number** thường dùng cho `FIREBASE_MESSAGING_SENDER_ID`.
+   - **Project ID** → `FIREBASE_PROJECT_ID`.
+   - **Storage** → bucket → `FIREBASE_STORAGE_BUCKET`.
+   - **Realtime Database** → copy URL → `FIREBASE_DATABASE_URL` (dạng `https://xxx.firebaseio.com` hoặc `xxx-default-rtdb.firebaseio.com`).
+3. Điền **hết** các dòng trong `firebase.env` (không để trống sau dấu `=`).
+4. Chạy web (trong thư mục project):
+
+```powershell
+.\run_web.ps1
+```
+
+Hoặc:
+
+```powershell
+flutter run -d chrome --dart-define-from-file=firebase.env
+```
+
+**Quan trọng:** Mỗi máy phải dùng **cùng một** `firebase.env` (cùng project Firebase) thì tài khoản đăng nhập mới khớp. Nếu thiếu `--dart-define` / sai project, app có thể màn trắng lúc khởi động, hoặc báo sai mật khẩu dù nhập đúng (vì user không tồn tại trên project khác).
+
+Gửi `firebase.env` cho bạn bè qua kênh riêng (không đưa lên GitHub).

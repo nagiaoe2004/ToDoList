@@ -7,10 +7,12 @@ class HelioGradientHero extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.centered = false,
   });
 
   final String title;
   final String? subtitle;
+  final bool centered;
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +28,12 @@ class HelioGradientHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             title,
+            textAlign: centered ? TextAlign.center : TextAlign.start,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 26,
@@ -40,6 +44,7 @@ class HelioGradientHero extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               subtitle!,
+              textAlign: centered ? TextAlign.center : TextAlign.start,
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
@@ -61,11 +66,16 @@ class HelioSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: scheme.outline.withValues(alpha: 0.6),
+          width: 1.1,
+        ),
       ),
       child: child,
     );

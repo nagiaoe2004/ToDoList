@@ -49,3 +49,13 @@ app.*.map.json
 /ios/Runner/GoogleService-Info.plist
 /macos/Runner/GoogleService-Info.plist
 /lib/firebase_options.dart
+
+# Local Firebase dart-define (copy from firebase.env.example)
+firebase.env
+
+# Bản source cũ để đối chiếu local (không đẩy lên Git)
+ToDoListV3/
+
+# Node modules
+node_modules/
+

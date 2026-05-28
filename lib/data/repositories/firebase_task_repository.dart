@@ -38,6 +38,26 @@ class FirebaseTaskRepository implements TaskRepository {
     return items;
   }
 
+  Stream<List<TaskItem>> _watchTasksFromQuery(Query query) {
+    return query.onValue.map((DatabaseEvent event) {
+      final List<TaskItem> items = <TaskItem>[];
+      final Object? raw = event.snapshot.value;
+      if (raw is! Map) return items;
+      for (final MapEntry<dynamic, dynamic> e in raw.entries) {
+        final Object? v = e.value;
+        if (v is! Map) continue;
+        items.add(
+          _fromMap(
+            e.key.toString(),
+            _stringKeyMap(v),
+          ),
+        );
+      }
+      items.sort((TaskItem a, TaskItem b) => a.dueDate.compareTo(b.dueDate));
+      return items;
+    });
+  }
+
   @override
   Future<List<TaskItem>> listPersonalForUser(String userId) async {
     final Query query =
@@ -53,6 +73,15 @@ class FirebaseTaskRepository implements TaskRepository {
   }) async {
     final Query query = _tasks.orderByChild('groupId').equalTo(groupId);
     return _tasksFromQuery(query);
+  }
+
+  @override
+  Stream<List<TaskItem>> watchForGroup({
+    required String groupId,
+    required String userId,
+  }) {
+    final Query query = _tasks.orderByChild('groupId').equalTo(groupId);
+    return _watchTasksFromQuery(query);
   }
 
   @override
@@ -79,6 +108,7 @@ class FirebaseTaskRepository implements TaskRepository {
   Future<TaskItem> addGroupTask({
     required String groupId,
     required String userId,
+    required String assignedToUserId,
     required String title,
     required String description,
     required DateTime dueDate,
@@ -92,6 +122,8 @@ class FirebaseTaskRepository implements TaskRepository {
       dueDate: dueDate,
       createdByUserId: userId,
       groupId: groupId,
+      assignedToUserId: assignedToUserId,
+      updatedAt: DateTime.now(),
     );
     await newRef.set(_toMap(item));
     return item;
@@ -125,7 +157,9 @@ class FirebaseTaskRepository implements TaskRepository {
       dueDate: _parseMillis(map['dueDate']),
       createdByUserId: (map['createdByUserId'] as String?) ?? '',
       groupId: _optionalString(map['groupId']),
+      assignedToUserId: _optionalString(map['assignedToUserId']),
       isDone: (map['isDone'] as bool?) ?? false,
+      updatedAt: _parseMillisNullable(map['updatedAt']),
     );
   }
 
@@ -146,6 +180,15 @@ class FirebaseTaskRepository implements TaskRepository {
     return DateTime.now();
   }
 
+  static DateTime? _parseMillisNullable(Object? value) {
+    if (value == null) return null;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is double) {
+      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+    }
+    return null;
+  }
+
   Map<String, dynamic> _toMap(TaskItem item) {
     final Map<String, dynamic> map = <String, dynamic>{
       'title': item.title,
@@ -157,6 +200,9 @@ class FirebaseTaskRepository implements TaskRepository {
     };
     if (item.groupId != null) {
       map['groupId'] = item.groupId;
+    }
+    if (item.assignedToUserId != null) {
+      map['assignedToUserId'] = item.assignedToUserId;
     }
     return map;
   }

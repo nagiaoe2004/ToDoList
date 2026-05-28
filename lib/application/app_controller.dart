@@ -16,6 +16,8 @@ import 'package:todo_list/domain/repositories/user_repository.dart';
 /// Điều phối repository, giữ trạng thái cho UI, thông báo [notifyListeners].
 /// Không import widget Flutter (chỉ dùng [ChangeNotifier]).
 class AppController extends ChangeNotifier {
+  static const String assignAllMembersKey = '__all_members__';
+
   AppController({
     required AuthRepository auth,
     required UserRepository users,
@@ -46,6 +48,7 @@ class AppController extends ChangeNotifier {
   double _fontScale = 1.0;
   String _fontFamily = 'Mặc định';
   bool _isAdminSession = false;
+  StreamSubscription<List<Group>>? _groupsSub;
 
   bool get isAuthenticated => _auth.currentUserId != null;
 
@@ -79,10 +82,17 @@ class AppController extends ChangeNotifier {
     _personalTasks = (results[1] as List<TaskItem>);
     _myGroups = (results[2] as List<Group>);
     _profile ??= _buildFallbackProfileFromAuth(id);
+    _groupsSub?.cancel();
+    _groupsSub = _groups.watchGroupsForUser(id).listen((List<Group> groups) {
+      _myGroups = groups;
+      notifyListeners();
+    });
     notifyListeners();
   }
 
   Future<void> clearSessionState() async {
+    await _groupsSub?.cancel();
+    _groupsSub = null;
     _profile = null;
     _personalTasks = <TaskItem>[];
     _myGroups = <Group>[];
@@ -99,7 +109,14 @@ class AppController extends ChangeNotifier {
         password: password,
       );
       if (fail != null) {
-        return 'Email hoặc mật khẩu không đúng.';
+        return switch (fail) {
+          SignInFailure.invalidCredentials =>
+            'Email hoặc mật khẩu không đúng.',
+          SignInFailure.networkUnavailable =>
+            'Không kết nối được Firebase. Kiểm tra mạng hoặc thử lại sau.',
+          SignInFailure.tooManyRequests =>
+            'Đăng nhập quá nhiều lần. Vui lòng đợi vài phút rồi thử lại.',
+        };
       }
       _isAdminSession =
           email.trim().toLowerCase() == 'admin@gmail.com' &&
@@ -109,7 +126,11 @@ class AppController extends ChangeNotifier {
     } on TimeoutException {
       return 'Kết nối dữ liệu quá chậm. Vui lòng thử lại.';
     } catch (e) {
-      return mapRepositoryErrorToMessage(e);
+      final String mapped = mapRepositoryErrorToMessage(e);
+      if (mapped == 'Đã có lỗi xảy ra. Thử lại sau.') {
+        return 'Mời thành viên thất bại: $e';
+      }
+      return mapped;
     }
   }
 
@@ -159,8 +180,12 @@ class AppController extends ChangeNotifier {
   Future<void> refreshGroups() async {
     final String? id = _auth.currentUserId;
     if (id == null) return;
-    _myGroups = await _groups.listGroupsForUser(id);
-    notifyListeners();
+    try {
+      _myGroups = await _groups.listGroupsForUser(id);
+      notifyListeners();
+    } catch (e) {
+      throw StateError('Refresh groups failed: $e');
+    }
   }
 
   Future<String?> updateProfile({
@@ -343,10 +368,28 @@ class AppController extends ChangeNotifier {
     return _groups.listMembers(groupId);
   }
 
+  Stream<List<AppUser>> watchGroupMembers(String groupId) {
+    return _groups.watchMembers(groupId);
+  }
+
+  Future<Group?> loadGroupById(String groupId) {
+    return _groups.getGroupById(groupId);
+  }
+
+  Stream<Group?> watchGroupById(String groupId) {
+    return _groups.watchGroupById(groupId);
+  }
+
   Future<List<TaskItem>> loadGroupTasks(String groupId) async {
     final String? id = _auth.currentUserId;
     if (id == null) return <TaskItem>[];
     return _tasks.listForGroup(groupId: groupId, userId: id);
+  }
+
+  Stream<List<TaskItem>> watchGroupTasks(String groupId) {
+    final String? id = _auth.currentUserId;
+    if (id == null) return Stream<List<TaskItem>>.value(<TaskItem>[]);
+    return _tasks.watchForGroup(groupId: groupId, userId: id);
   }
 
   Future<String?> addPersonalTask({
@@ -371,6 +414,7 @@ class AppController extends ChangeNotifier {
 
   Future<String?> addGroupTask({
     required String groupId,
+    required String assignedToUserId,
     required String title,
     required String description,
     required DateTime dueDate,
@@ -381,9 +425,19 @@ class AppController extends ChangeNotifier {
     final String? id = _auth.currentUserId;
     if (id == null) return 'Chưa đăng nhập.';
     try {
+      final Group? group = await _groups.getGroupById(groupId);
+      if (group == null) return 'Không tìm thấy nhóm.';
+      if (group.leaderUserId != id) {
+        return 'Chỉ trưởng nhóm mới có quyền phân công nhiệm vụ.';
+      }
+      if (assignedToUserId != assignAllMembersKey &&
+          !group.memberUserIds.contains(assignedToUserId)) {
+        return 'Người được giao không thuộc nhóm.';
+      }
       await _tasks.addGroupTask(
         groupId: groupId,
         userId: id,
+        assignedToUserId: assignedToUserId,
         title: title,
         description: description,
         dueDate: dueDate,
@@ -410,15 +464,44 @@ class AppController extends ChangeNotifier {
     await refreshPersonalTasks();
   }
 
-  Future<void> setGroupTaskDone({
+  Future<String?> setGroupTaskDone({
     required String groupId,
     required String taskId,
     required bool isDone,
   }) async {
     final String? id = _auth.currentUserId;
-    if (id == null) return;
+    if (id == null) return 'Chưa đăng nhập.';
+    final Group? group = await _groups.getGroupById(groupId);
+    if (group == null) return 'Không tìm thấy nhóm.';
+    final bool isLeader = group.leaderUserId == id;
+    final List<TaskItem> tasks = await _tasks.listForGroup(
+      groupId: groupId,
+      userId: id,
+    );
+    TaskItem? target;
+    for (final TaskItem task in tasks) {
+      if (task.id == taskId) {
+        target = task;
+        break;
+      }
+    }
+    if (target == null) return 'Không tìm thấy nhiệm vụ.';
+    if (!isLeader) {
+      final bool isAssignedToAll =
+          target.assignedToUserId == assignAllMembersKey;
+      if (!isAssignedToAll && target.assignedToUserId != id) {
+        return 'Nhiệm vụ này không được giao cho bạn.';
+      }
+      if (!target.isDone && !isDone) {
+        return null;
+      }
+      if (target.isDone && !isDone) {
+        return 'Chỉ trưởng nhóm mới có quyền trả về chưa hoàn thành.';
+      }
+    }
     await _tasks.setTaskDone(taskId: taskId, isDone: isDone, userId: id);
     notifyListeners();
+    return null;
   }
 
   Future<void> deleteGroupTask({
@@ -429,5 +512,11 @@ class AppController extends ChangeNotifier {
     if (id == null) return;
     await _tasks.deleteTask(taskId: taskId, userId: id);
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _groupsSub?.cancel();
+    super.dispose();
   }
 }

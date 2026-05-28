@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -15,8 +16,10 @@ class FirebaseAuthRepository implements AuthRepository {
   final FirebaseAuth _auth;
   final FirebaseDatabase _db;
 
-  static String _emailKey(String email) =>
-      Uri.encodeComponent(email.trim().toLowerCase());
+  static String _emailKey(String email) {
+    final String normalized = email.trim().toLowerCase();
+    return base64Url.encode(utf8.encode(normalized)).replaceAll('=', '');
+  }
 
   @override
   String? get currentUserId => _auth.currentUser?.uid;
@@ -43,6 +46,12 @@ class FirebaseAuthRepository implements AuthRepository {
     } on FirebaseAuthException catch (e) {
       // ignore: avoid_print
       print('Firebase signIn error: ${e.code} - ${e.message}');
+      if (e.code == 'network-request-failed' || e.code == 'internal-error') {
+        return SignInFailure.networkUnavailable;
+      }
+      if (e.code == 'too-many-requests') {
+        return SignInFailure.tooManyRequests;
+      }
       return SignInFailure.invalidCredentials;
     }
   }

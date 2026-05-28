@@ -78,11 +78,43 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  InputDecoration _fieldDecoration({
+    required BuildContext context,
+    required String hintText,
+    required IconData icon,
+  }) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.35)
+        : const Color(0xFF8D93A5);
+    return InputDecoration(
+      hintText: hintText,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: borderColor, width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: borderColor, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: scheme.primary, width: 1.4),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isWide = MediaQuery.of(context).size.width > 760;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color tabBorder = isDark
+        ? Colors.white.withValues(alpha: 0.35)
+        : const Color(0xFF8D93A5);
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -101,24 +133,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
-                        SegmentedButton<bool>(
-                          segments: const <ButtonSegment<bool>>[
-                            ButtonSegment<bool>(
-                              value: false,
-                              label: Text('Đăng nhập'),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: tabBorder,
+                              width: 1,
                             ),
-                            ButtonSegment<bool>(
-                              value: true,
-                              label: Text('Đăng ký'),
-                            ),
-                          ],
-                          selected: <bool>{_registerMode},
-                          onSelectionChanged: (Set<bool> val) {
-                            setState(() {
-                              _registerMode = val.first;
-                              _error = null;
-                            });
-                          },
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: SegmentedButton<bool>(
+                            segments: const <ButtonSegment<bool>>[
+                              ButtonSegment<bool>(
+                                value: false,
+                                label: Text('Đăng nhập'),
+                              ),
+                              ButtonSegment<bool>(
+                                value: true,
+                                label: Text('Đăng ký'),
+                              ),
+                            ],
+                            selected: <bool>{_registerMode},
+                            onSelectionChanged: (Set<bool> val) {
+                              setState(() {
+                                _registerMode = val.first;
+                                _error = null;
+                              });
+                            },
+                          ),
                         ),
                         const SizedBox(height: 14),
                         if (_registerMode) ...<Widget>[
@@ -128,9 +169,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             textInputAction: TextInputAction.next,
                             onSubmitted: (_) =>
                                 FocusScope.of(context).requestFocus(_phoneFocus),
-                            decoration: const InputDecoration(
+                            decoration: _fieldDecoration(
+                              context: context,
                               hintText: 'Họ và tên',
-                              prefixIcon: Icon(Icons.person_outline_rounded),
+                              icon: Icons.person_outline_rounded,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -141,9 +183,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             textInputAction: TextInputAction.next,
                             onSubmitted: (_) =>
                                 FocusScope.of(context).requestFocus(_emailFocus),
-                            decoration: const InputDecoration(
+                            decoration: _fieldDecoration(
+                              context: context,
                               hintText: 'Số điện thoại',
-                              prefixIcon: Icon(Icons.phone_rounded),
+                              icon: Icons.phone_rounded,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -155,9 +198,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.next,
                           onSubmitted: (_) =>
                               FocusScope.of(context).requestFocus(_passwordFocus),
-                          decoration: const InputDecoration(
+                          decoration: _fieldDecoration(
+                            context: context,
                             hintText: 'Email',
-                            prefixIcon: Icon(Icons.mail_outline_rounded),
+                            icon: Icons.mail_outline_rounded,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -167,9 +211,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: true,
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _submitByMode(),
-                          decoration: const InputDecoration(
+                          decoration: _fieldDecoration(
+                            context: context,
                             hintText: 'Mật khẩu',
-                            prefixIcon: Icon(Icons.lock_outline_rounded),
+                            icon: Icons.lock_outline_rounded,
                           ),
                         ),
                         if (_error != null) ...<Widget>[

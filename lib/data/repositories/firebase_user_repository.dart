@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:todo_list/data/firebase_rtdb.dart';
@@ -5,7 +7,7 @@ import 'package:todo_list/domain/models/app_user.dart';
 import 'package:todo_list/domain/repositories/user_repository.dart';
 
 String emailIndexKey(String email) =>
-    Uri.encodeComponent(email.trim().toLowerCase());
+    base64Url.encode(utf8.encode(email.trim().toLowerCase())).replaceAll('=', '');
 
 class FirebaseUserRepository implements UserRepository {
   FirebaseUserRepository({FirebaseDatabase? database})
@@ -92,20 +94,51 @@ class FirebaseUserRepository implements UserRepository {
 
   @override
   Future<AppUser?> findUserByEmail(String email) async {
+    final String normalized = email.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
     final DataSnapshot idx =
-        await _userEmails.child(emailIndexKey(email)).get();
-    if (!idx.exists || idx.value == null) return null;
-    final String uid = idx.value.toString();
-    final AppUser? u = await getUserById(uid);
-    return u;
+        await _userEmails.child(emailIndexKey(normalized)).get();
+    if (idx.exists && idx.value != null) {
+      final String uid = idx.value.toString();
+      final AppUser? fromIndex = await getUserById(uid);
+      if (fromIndex != null) {
+        return fromIndex;
+      }
+    }
+
+    // Fallback cho dữ liệu cũ chưa có node userEmails.
+    final DataSnapshot usersByEmail = await _users
+        .orderByChild('email')
+        .equalTo(normalized)
+        .limitToFirst(1)
+        .get();
+    if (!usersByEmail.exists || usersByEmail.value == null) return null;
+    final Object? raw = usersByEmail.value;
+    if (raw is! Map) return null;
+    if (raw.entries.isEmpty) return null;
+    final MapEntry<dynamic, dynamic> first = raw.entries.first;
+    final Object? value = first.value;
+    if (value is! Map) return null;
+    final String uid = first.key.toString();
+    final AppUser user = _fromMap(
+      uid,
+      value.map(
+        (dynamic k, dynamic v) => MapEntry<String, dynamic>(k.toString(), v),
+      ),
+    );
+    await _setEmailIndex(normalized, uid);
+    return user;
   }
 
   AppUser _fromMap(String id, Map<String, dynamic> map) {
+    final String name = map['name']?.toString().trim() ?? '';
+    final String email = map['email']?.toString().trim() ?? '';
+    final String phone = map['phone']?.toString().trim() ?? '';
     return AppUser(
       id: id,
-      name: (map['name'] as String?) ?? 'Chưa cập nhật',
-      email: (map['email'] as String?) ?? '',
-      phone: (map['phone'] as String?) ?? '',
+      name: name.isEmpty ? 'Chưa cập nhật' : name,
+      email: email,
+      phone: phone,
     );
   }
 }

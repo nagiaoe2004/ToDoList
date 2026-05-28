@@ -18,6 +18,7 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -33,8 +34,11 @@ class FilterBar extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFDDE2EE),
+            color: scheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.55),
+            ),
           ),
           child: Row(
           children: <Widget>[
@@ -80,6 +84,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -87,7 +92,7 @@ class _FilterPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF5B67FF)
+              ? scheme.primary
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -95,7 +100,7 @@ class _FilterPill extends StatelessWidget {
           child: Text(
             title,
             style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF15171A),
+              color: selected ? scheme.onPrimary : scheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -5,6 +5,8 @@ import 'package:todo_list/domain/models/group.dart';
 abstract class GroupRepository {
   Future<List<Group>> listGroupsForUser(String userId);
 
+  Stream<List<Group>> watchGroupsForUser(String userId);
+
   Future<Group> createGroup({
     required String userId,
     required String name,
@@ -19,4 +21,10 @@ abstract class GroupRepository {
   });
 
   Future<List<AppUser>> listMembers(String groupId);
+
+  Stream<List<AppUser>> watchMembers(String groupId);
+
+  Future<Group?> getGroupById(String groupId);
+
+  Stream<Group?> watchGroupById(String groupId);
 }

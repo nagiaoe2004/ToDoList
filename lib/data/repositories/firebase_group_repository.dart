@@ -22,8 +22,16 @@ class FirebaseGroupRepository implements GroupRepository {
 
   static List<String> _memberListFromMap(Map<String, dynamic> map) {
     final Object? raw = map['memberUserIds'];
-    if (raw is! List) return <String>[];
-    return raw.map((dynamic e) => e.toString()).toList();
+    if (raw is List) {
+      return raw.map((dynamic e) => e.toString()).toList();
+    }
+    if (raw is Map) {
+      return raw.entries
+          .where((MapEntry<dynamic, dynamic> e) => e.value == true)
+          .map((MapEntry<dynamic, dynamic> e) => e.key.toString())
+          .toList();
+    }
+    return <String>[];
   }
 
   @override
@@ -39,6 +47,26 @@ class FirebaseGroupRepository implements GroupRepository {
     }
     final List<Group?> resolved = await Future.wait(loaders);
     return resolved.whereType<Group>().toList();
+  }
+
+  @override
+  Stream<List<Group>> watchGroupsForUser(String userId) {
+    return _userGroups(userId).onValue.asyncMap((DatabaseEvent event) async {
+      final Object? raw = event.snapshot.value;
+      if (raw is! Map) return <Group>[];
+      final List<Future<Group?>> loaders = <Future<Group?>>[];
+      for (final MapEntry<dynamic, dynamic> e in raw.entries) {
+        final String gid = e.key.toString();
+        loaders.add(_loadGroup(gid));
+      }
+      final List<Group?> resolved = await Future.wait(loaders);
+      return resolved.whereType<Group>().toList();
+    });
+  }
+
+  @override
+  Future<Group?> getGroupById(String groupId) {
+    return _loadGroup(groupId);
   }
 
   Future<Group?> _loadGroup(String groupId) async {
@@ -70,6 +98,7 @@ class FirebaseGroupRepository implements GroupRepository {
       'name': trimmed,
       'workDescription': work,
       'companyName': (company == null || company.isEmpty) ? null : company,
+      'leaderUserId': userId,
       'memberUserIds': <String>[userId],
       'createdAt': ServerValue.timestamp,
     });
@@ -79,6 +108,7 @@ class FirebaseGroupRepository implements GroupRepository {
       name: trimmed,
       workDescription: work,
       companyName: (company == null || company.isEmpty) ? null : company,
+      leaderUserId: userId,
       memberUserIds: <String>[userId],
     );
   }
@@ -131,17 +161,50 @@ class FirebaseGroupRepository implements GroupRepository {
     return members;
   }
 
+  @override
+  Stream<List<AppUser>> watchMembers(String groupId) {
+    return _groups.child(groupId).onValue.asyncMap((DatabaseEvent event) async {
+      final Object? raw = event.snapshot.value;
+      if (raw is! Map) return <AppUser>[];
+      final Map<String, dynamic> gdata = raw.map(
+        (dynamic k, dynamic v) => MapEntry<String, dynamic>(k.toString(), v),
+      );
+      final Group group = _fromDoc(groupId, gdata);
+      final List<AppUser> members = <AppUser>[];
+      for (final String uid in group.memberUserIds) {
+        final AppUser? user = await _users.getUserById(uid);
+        if (user != null) members.add(user);
+      }
+      return members;
+    });
+  }
+
+  @override
+  Stream<Group?> watchGroupById(String groupId) {
+    return _groups.child(groupId).onValue.map((DatabaseEvent event) {
+      final Object? raw = event.snapshot.value;
+      if (raw is! Map) return null;
+      final Map<String, dynamic> data = raw.map(
+        (dynamic k, dynamic v) => MapEntry<String, dynamic>(k.toString(), v),
+      );
+      return _fromDoc(groupId, data);
+    });
+  }
+
   Group _fromDoc(String id, Map<String, dynamic> map) {
-    final String? company = (map['companyName'] as String?)?.trim();
+    final String name = map['name']?.toString().trim() ?? '';
+    final String work = map['workDescription']?.toString().trim() ?? '';
+    final String companyRaw = map['companyName']?.toString().trim() ?? '';
+    final List<String> members = _memberListFromMap(map);
+    final String leader = map['leaderUserId']?.toString().trim() ??
+        (members.isEmpty ? '' : members.first);
     return Group(
       id: id,
-      name: (map['name'] as String?) ?? 'Nhóm',
-      workDescription:
-          (map['workDescription'] as String?)?.trim().isNotEmpty == true
-              ? (map['workDescription'] as String)
-              : 'Chưa mô tả công việc',
-      companyName: (company == null || company.isEmpty) ? null : company,
-      memberUserIds: _memberListFromMap(map),
+      name: name.isEmpty ? 'Nhóm' : name,
+      workDescription: work.isEmpty ? 'Chưa mô tả công việc' : work,
+      companyName: companyRaw.isEmpty ? null : companyRaw,
+      leaderUserId: leader,
+      memberUserIds: members,
     );
   }
 }

@@ -1,0 +1,31 @@
+Test Case ID,Module,Title,Preconditions,Test Steps,Expected Result,Actual Result,Status,Priority,Type
+TC-USR-01,users,Authenticated user reads own profile,"User is logged in with uid=A","1) Login as uid=A; 2) Read users/A",Read succeeds,,,High,Positive
+TC-USR-02,users,Authenticated user updates own profile,"User is logged in with uid=A","1) Login as uid=A; 2) Update users/A/name and users/A/phone",Write succeeds,,,High,Positive
+TC-USR-03,users,User A updates user B profile,"User A (uid=A) is logged in; User B exists (uid=B)","1) Login as uid=A; 2) Update users/B/name",Write is denied (permission denied),,,High,Negative
+TC-USR-04,users,Unauthenticated user reads profile,User is logged out,"1) Ensure logout; 2) Read users/A",Read is denied,,,High,Negative
+TC-USR-05,users,Query users by email index,"User is logged in; users data includes email fields","1) Login; 2) Query users ordered/filtered by email",Query works without index/rule error,,,Medium,Positive
+TC-UEM-01,userEmails,Authenticated user reads email mapping,User is logged in,"1) Login; 2) Read userEmails",Read succeeds,,,Medium,Positive
+TC-UEM-02,userEmails,Authenticated user writes email mapping,User is logged in,"1) Login; 2) Write userEmails/{normalizedEmail}=uid",Write succeeds,,,Medium,Positive
+TC-UEM-03,userEmails,Unauthenticated user reads email mapping,User is logged out,"1) Ensure logout; 2) Read userEmails",Read is denied,,,High,Negative
+TC-UEM-04,userEmails,Unauthenticated user writes email mapping,User is logged out,"1) Ensure logout; 2) Write userEmails/{key}",Write is denied,,,High,Negative
+TC-UEM-05,userEmails,Email key collision between two users,"User A and User B are both valid authenticated users","1) Login as A and write userEmails/x=uidA; 2) Login as B and write userEmails/x=uidB",Second write is allowed by current rules (log as business risk),,,Low,Edge
+TC-TSK-01,tasks,Owner reads and updates personal task,"Task T exists with groupId=null and createdByUserId=A; User A logged in","1) Login as A; 2) Read task T; 3) Update task T",Read and write succeed,,,High,Positive
+TC-TSK-02,tasks,User B reads user A personal task,"Task T exists with groupId=null and createdByUserId=A; User B logged in","1) Login as B; 2) Read task T",Read is denied,,,High,Negative
+TC-TSK-03,tasks,Group member reads group task,"Task T has groupId=G1; userGroups/A/G1 exists; User A logged in","1) Login as A; 2) Read task T",Read succeeds,,,High,Positive
+TC-TSK-04,tasks,Group leader updates any group task fields,"Task T has groupId=G1; groups/G1/leaderUserId=A; User A logged in","1) Login as leader A; 2) Update title/description/dueDate/assignedToUserId/isDone",Write succeeds,,,High,Positive
+TC-TSK-05,tasks,Assignee marks task done with restricted change,"Task T has groupId=G1; assignedToUserId=A; isDone=false; User A logged in","1) Login as assignee A; 2) Update only isDone from false to true; 3) Try changing another field",Only isDone false->true is allowed; other field changes are denied,,,High,Negative
+TC-GRP-01,groups,Authenticated user reads groups,User is logged in,"1) Login; 2) Read groups",Read succeeds,,,Medium,Positive
+TC-GRP-02,groups,Authenticated user creates group,User is logged in,"1) Login; 2) Create groups/{newId}",Write succeeds,,,Medium,Positive
+TC-GRP-03,groups,Authenticated user updates another user group,User A logged in and group owned/created by user B exists,"1) Login as A; 2) Update group created by B",Write succeeds by current rules (log as authorization risk),,,Low,Edge
+TC-GRP-04,groups,Unauthenticated user reads groups,User is logged out,"1) Ensure logout; 2) Read groups",Read is denied,,,High,Negative
+TC-GRP-05,groups,Unauthenticated user writes groups,User is logged out,"1) Ensure logout; 2) Write groups/{id}",Write is denied,,,High,Negative
+TC-UGR-01,userGroups,Authenticated user reads membership map,User is logged in,"1) Login; 2) Read userGroups",Read succeeds,,,Medium,Positive
+TC-UGR-02,userGroups,Authenticated user adds membership for another user,User A logged in and target user B exists,"1) Login as A; 2) Write userGroups/B/G1=true",Write succeeds by current rules (log as authorization risk),,,Low,Edge
+TC-UGR-03,userGroups,Authenticated user removes own membership,User A logged in and userGroups/A/G1 exists,"1) Login as A; 2) Remove userGroups/A/G1",Write succeeds,,,Medium,Positive
+TC-UGR-04,userGroups,Unauthenticated user reads membership map,User is logged out,"1) Ensure logout; 2) Read userGroups",Read is denied,,,High,Negative
+TC-UGR-05,userGroups,Unauthenticated user writes membership map,User is logged out,"1) Ensure logout; 2) Write userGroups/{uid}/{gid}",Write is denied,,,High,Negative
+TC-LGH-01,login_history,Authenticated user writes login history,User is logged in,"1) Login; 2) Write login_history/{id} with time",Write succeeds,,,Medium,Positive
+TC-LGH-02,login_history,Authenticated user reads login history,User is logged in,"1) Login; 2) Read login_history",Read succeeds,,,Medium,Positive
+TC-LGH-03,login_history,Unauthenticated user writes login history,User is logged out,"1) Ensure logout; 2) Write login_history/{id}",Write is denied,,,High,Negative
+TC-LGH-04,login_history,Unauthenticated user reads login history,User is logged out,"1) Ensure logout; 2) Read login_history",Read is denied,,,High,Negative
+TC-LGH-05,login_history,Query login history by time index,"User is logged in; records contain time field","1) Login; 2) Query login_history ordered/filtered by time",Query works without index/rule error,,,Low,Positive

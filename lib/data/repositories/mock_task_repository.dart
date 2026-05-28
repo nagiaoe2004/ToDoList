@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:todo_list/data/in_memory_store.dart';
 import 'package:todo_list/domain/models/group.dart';
 import 'package:todo_list/domain/models/task_item.dart';
@@ -8,6 +10,13 @@ class MockTaskRepository implements TaskRepository {
   MockTaskRepository(this._store);
 
   final InMemoryStore _store;
+  final StreamController<int> _changes = StreamController<int>.broadcast();
+
+  void _emitChange() {
+    if (!_changes.isClosed) {
+      _changes.add(DateTime.now().millisecondsSinceEpoch);
+    }
+  }
 
   bool _isGroupMember(String groupId, String userId) {
     final int gi = _store.groups.indexWhere((Group g) => g.id == groupId);
@@ -36,6 +45,16 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
+  Stream<List<TaskItem>> watchForGroup({
+    required String groupId,
+    required String userId,
+  }) {
+    return _changes.stream.startWith(0).asyncMap(
+      (_) => listForGroup(groupId: groupId, userId: userId),
+    );
+  }
+
+  @override
   Future<TaskItem> addPersonalTask({
     required String userId,
     required String title,
@@ -50,6 +69,7 @@ class MockTaskRepository implements TaskRepository {
       createdByUserId: userId,
     );
     _store.tasks.insert(0, t);
+    _emitChange();
     return t;
   }
 
@@ -57,6 +77,7 @@ class MockTaskRepository implements TaskRepository {
   Future<TaskItem> addGroupTask({
     required String groupId,
     required String userId,
+    required String assignedToUserId,
     required String title,
     required String description,
     required DateTime dueDate,
@@ -71,8 +92,11 @@ class MockTaskRepository implements TaskRepository {
       dueDate: dueDate,
       createdByUserId: userId,
       groupId: groupId,
+      assignedToUserId: assignedToUserId,
+      updatedAt: DateTime.now(),
     );
     _store.tasks.insert(0, t);
+    _emitChange();
     return t;
   }
 
@@ -90,7 +114,11 @@ class MockTaskRepository implements TaskRepository {
     } else if (t.createdByUserId != userId) {
       return;
     }
-    _store.tasks[ti] = t.copyWith(isDone: isDone);
+    _store.tasks[ti] = t.copyWith(
+      isDone: isDone,
+      updatedAt: DateTime.now(),
+    );
+    _emitChange();
   }
 
   @override
@@ -107,5 +135,13 @@ class MockTaskRepository implements TaskRepository {
       return;
     }
     _store.tasks.removeAt(ti);
+    _emitChange();
+  }
+}
+
+extension on Stream<int> {
+  Stream<int> startWith(int initialValue) async* {
+    yield initialValue;
+    yield* this;
   }
 }

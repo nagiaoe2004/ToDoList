@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:todo_list/data/in_memory_store.dart';
 import 'package:todo_list/domain/models/app_user.dart';
 import 'package:todo_list/domain/models/group.dart';
@@ -11,12 +13,26 @@ class MockGroupRepository implements GroupRepository {
   final InMemoryStore _store;
   final UserRepository _users;
   int _groupSeq = 10;
+  final StreamController<int> _changes = StreamController<int>.broadcast();
+
+  void _emitChange() {
+    if (!_changes.isClosed) {
+      _changes.add(DateTime.now().millisecondsSinceEpoch);
+    }
+  }
 
   @override
   Future<List<Group>> listGroupsForUser(String userId) async {
     return _store.groups
         .where((Group g) => g.memberUserIds.contains(userId))
         .toList();
+  }
+
+  @override
+  Stream<List<Group>> watchGroupsForUser(String userId) {
+    return _changes.stream.startWith(0).asyncMap(
+      (_) => listGroupsForUser(userId),
+    );
   }
 
   @override
@@ -40,9 +56,11 @@ class MockGroupRepository implements GroupRepository {
       name: trimmed,
       workDescription: work,
       companyName: (company == null || company.isEmpty) ? null : company,
+      leaderUserId: userId,
       memberUserIds: <String>[userId],
     );
     _store.groups.add(g);
+    _emitChange();
     return g;
   }
 
@@ -70,6 +88,7 @@ class MockGroupRepository implements GroupRepository {
     }
     final List<String> next = List<String>.from(g.memberUserIds)..add(target.id);
     _store.groups[gi] = g.copyWith(memberUserIds: next);
+    _emitChange();
   }
 
   @override
@@ -83,5 +102,29 @@ class MockGroupRepository implements GroupRepository {
       if (u != null) out.add(u);
     }
     return out;
+  }
+
+  @override
+  Stream<List<AppUser>> watchMembers(String groupId) {
+    return _changes.stream.startWith(0).asyncMap((_) => listMembers(groupId));
+  }
+
+  @override
+  Future<Group?> getGroupById(String groupId) async {
+    final int gi = _store.groups.indexWhere((Group g) => g.id == groupId);
+    if (gi == -1) return null;
+    return _store.groups[gi];
+  }
+
+  @override
+  Stream<Group?> watchGroupById(String groupId) {
+    return _changes.stream.startWith(0).asyncMap((_) => getGroupById(groupId));
+  }
+}
+
+extension on Stream<int> {
+  Stream<int> startWith(int initialValue) async* {
+    yield initialValue;
+    yield* this;
   }
 }

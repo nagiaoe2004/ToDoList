@@ -167,7 +167,8 @@ class _TasksScreenState extends State<TasksScreen> {
         children: <Widget>[
           HelioGradientHero(
             title: 'Công việc của tôi',
-            subtitle: 'Hoàn thành $done/${tasks.length} việc (Realtime)',
+            subtitle: 'Hoàn thành $done/${tasks.length} việc',
+            centered: true,
           ),
           const SizedBox(height: 14),
           _buildStats(tasks, done),
@@ -204,7 +205,8 @@ class _TasksScreenState extends State<TasksScreen> {
               children: <Widget>[
                 HelioGradientHero(
                   title: 'Công việc của tôi',
-                  subtitle: 'Realtime DB',
+                  subtitle: null,
+                  centered: true,
                 ),
                 const SizedBox(height: 14),
                 _buildStats(tasks, done),
@@ -231,24 +233,30 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Widget _buildStats(List<TaskItem> tasks, int done) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return Row(
       children: <Widget>[
-        StatChip(
-          label: 'Tổng',
-          value: '${tasks.length}',
-          color: Colors.blue,
+        Expanded(
+          child: StatChip(
+            label: 'Tổng',
+            value: '${tasks.length}',
+            color: Colors.blue,
+          ),
         ),
-        StatChip(
-          label: 'Xong',
-          value: '$done',
-          color: Colors.green,
+        const SizedBox(width: 8),
+        Expanded(
+          child: StatChip(
+            label: 'Xong',
+            value: '$done',
+            color: Colors.green,
+          ),
         ),
-        StatChip(
-          label: 'Đang làm',
-          value: '${tasks.length - done}',
-          color: Colors.orange,
+        const SizedBox(width: 8),
+        Expanded(
+          child: StatChip(
+            label: 'Đang làm',
+            value: '${tasks.length - done}',
+            color: Colors.orange,
+          ),
         ),
       ],
     );
